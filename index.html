@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent OS — Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   AGENT OS — Mission Control Dashboard
+   Design: Void-black canvas, emerald signal-green
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* Surfaces */
+  --bg-canvas: #030304;
+  --bg-surface: #0a0a0c;
+  --bg-elevated: #111113;
+  --bg-hover: #1a1a1d;
+  --bg-active: #222225;
+
+  /* Accent — Emerald */
+  --accent-primary: #00d992;
+  --accent-secondary: #2fd6a1;
+  --accent-muted: #10b981;
+  --accent-glow: rgba(0,217,146,0.15);
+  --accent-glow-strong: rgba(0,217,146,0.3);
+
+  /* Agent Colors */
+  --agent-hermes: #00d992;
+  --agent-claude: #f54e00;
+  --agent-antigravity: #818cf8;
+  --agent-codex: #f0c04c;
+  --agent-openclaw: #e85671;
+
+  /* Text */
+  --text-primary: #f2f2f2;
+  --text-secondary: #8b949e;
+  --text-tertiary: #62666d;
+  --text-accent: #00d992;
+  --text-disabled: #3d3a39;
+
+  /* Borders */
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-default: rgba(255,255,255,0.08);
+  --border-accent: rgba(0,217,146,0.3);
+
+  /* Semantic */
+  --status-ok: #10b981;
+  --status-warn: #f0c04c;
+  --status-error: #e85671;
+  --status-info: #4cb3d4;
+
+  /* Kanban */
+  --kanban-todo: #62666d;
+  --kanban-progress: #f0c04c;
+  --kanban-review: #818cf8;
+  --kanban-done: #10b981;
+
+  /* Shadows */
+  --shadow-sm: rgba(0,0,0,0.4) 0px 2px 8px;
+  --shadow-md: rgba(0,0,0,0.6) 0px 4px 24px;
+  --shadow-lg: rgba(0,0,0,0.7) 0px 8px 48px;
+  --shadow-glow: 0 0 20px rgba(0,217,146,0.15);
+
+  /* Layout */
+  --sidebar-w: 220px;
+  --header-h: 48px;
+  --panel-title-h: 36px;
+  --health-bar-h: 32px;
+
+  /* Typography */
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Animation */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration: 150ms;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-primary);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
+
+/* ── Layout Shell ── */
+.os-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--header-h) 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.os-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 100;
+}
+.os-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.os-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.os-logo-bolt {
+  width: 20px;
+  height: 20px;
+  color: var(--accent-primary);
+  filter: drop-shadow(0 0 6px var(--accent-glow-strong));
+}
+.os-subtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-subtle);
+}
+.os-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.os-clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.os-health-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.os-health-pill.ok { background: rgba(16,185,129,0.15); color: var(--status-ok); }
+.os-health-pill.warn { background: rgba(240,192,76,0.15); color: var(--status-warn); }
+.os-health-pill.error { background: rgba(232,86,113,0.15); color: var(--status-error); }
+.os-health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.os-health-pill.ok .os-health-dot { animation: pulse-green 2s ease-in-out infinite; }
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Sidebar ── */
+.os-sidebar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-row: 2;
+}
+.os-sidebar-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.os-sidebar-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 0 8px 8px;
+}
+.os-agent-list { display: flex; flex-direction: column; gap: 2px; }
+.os-agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+  position: relative;
+}
+.os-agent:hover { background: var(--bg-hover); }
+.os-agent.active { background: var(--bg-active); }
+.os-agent.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--agent-color);
+  box-shadow: 0 0 8px var(--agent-color);
+}
+.os-agent-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.os-agent-hermes .os-agent-avatar { background: rgba(0,217,146,0.15); color: var(--agent-hermes); }
+.os-agent-claude .os-agent-avatar { background: rgba(245,78,0,0.15); color: var(--agent-claude); }
+.os-agent-antigravity .os-agent-avatar { background: rgba(129,140,248,0.15); color: var(--agent-antigravity); }
+.os-agent-codex .os-agent-avatar { background: rgba(240,192,76,0.15); color: var(--agent-codex); }
+.os-agent-openclaw .os-agent-avatar { background: rgba(232,86,113,0.15); color: var(--agent-openclaw); }
+.os-agent-info { flex: 1; min-width: 0; }
+.os-agent-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-agent-role {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-agent-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.os-agent-badge.free { background: rgba(0,217,146,0.1); color: var(--accent-primary); }
+.os-agent-badge.orchestrate { background: rgba(0,217,146,0.15); color: var(--agent-hermes); }
+.os-agent-status {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.os-agent-status.online { background: var(--status-ok); }
+.os-agent-status.busy { background: var(--status-warn); }
+.os-agent-status.offline { background: var(--text-disabled); }
+
+/* Sidebar Nav */
+.os-sidebar-nav {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+}
+.os-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  transition: all var(--duration) var(--ease);
+  margin-bottom: 2px;
+}
+.os-nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.os-nav-item.active {
+  background: var(--bg-active);
+  color: var(--accent-primary);
+}
+.os-nav-item.active .os-nav-icon { color: var(--accent-primary); }
+.os-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.os-nav-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--accent-glow);
+  color: var(--accent-primary);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* ── Main Content ── */
+.os-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-canvas);
+}
+
+/* ── Health Bar ── */
+.os-health-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: var(--health-bar-h);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.os-health-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.os-health-item .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.os-health-item .dot.ok { background: var(--status-ok); }
+.os-health-item .dot.warn { background: var(--status-warn); }
+.os-health-item .dot.error { background: var(--status-error); }
+.os-health-item .label { font-weight: 500; }
+.os-health-item .value { font-family: var(--font-mono); color: var(--text-tertiary); margin-left: 2px; }
+
+/* ── Panel Container ── */
+.os-panel-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.os-panel {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.os-panel.active { display: flex; }
+
+/* ── Panel Header ── */
+.os-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+}
+.os-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.os-panel-actions { display: flex; align-items: center; gap: 8px; }
+.os-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  transition: all var(--duration) var(--ease);
+  font-family: var(--font-primary);
+}
+.os-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-accent); }
+.os-btn.primary {
+  background: rgba(0,217,146,0.1);
+  color: var(--accent-primary);
+  border-color: var(--border-accent);
+}
+.os-btn.primary:hover { background: rgba(0,217,146,0.2); box-shadow: var(--shadow-glow); }
+.os-btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+/* ── Panel Body ── */
+.os-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* ── Kanban Board ── */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.kanban-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.kanban-col-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kanban-col-count {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+}
+.kanban-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kanban-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: grab;
+  transition: all var(--duration) var(--ease);
+}
+.kanban-card:hover { border-color: var(--border-accent); box-shadow: var(--shadow-glow); }
+.kanban-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.kanban-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.kanban-card-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.kanban-card-priority {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kanban-card-priority.p1 { background: var(--status-error); }
+.kanban-card-priority.p2 { background: var(--status-warn); }
+.kanban-card-priority.p3 { background: var(--status-ok); }
+.kanban-card-priority.p4 { background: var(--text-disabled); }
+
+/* ── Vault Panel ── */
+.vault-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  height: 100%;
+}
+.vault-tree {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow-y: auto;
+  padding: 8px;
+}
+.vault-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all var(--duration) var(--ease);
+}
+.vault-tree-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.vault-tree-item.active { background: var(--bg-active); color: var(--accent-primary); }
+.vault-tree-item .icon { width: 14px; height: 14px; flex-shrink: 0; }
+.vault-tree-item .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vault-tree-item .badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+}
+.vault-editor {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.vault-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.vault-editor-title {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.vault-editor-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+/* ── Studio Panel ── */
+.studio-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  height: 100%;
+}
+.studio-tools {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.studio-tool {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: all var(--duration) var(--ease);
+}
+.studio-tool:hover { background: var(--bg-hover); color: var(--text-primary); }
+.studio-tool.active { background: var(--bg-active); color: var(--accent-primary); }
+.studio-tool .icon { width: 16px; height: 16px; flex-shrink: 0; }
+.studio-tool .label { flex: 1; }
+.studio-tool .status {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-disabled);
+}
+.studio-tool .status.ready { background: var(--status-ok); }
+.studio-workspace {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.studio-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.studio-workspace-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.studio-output {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.studio-output img,
+.studio-output video {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 4px;
+}
+.studio-output audio { width: 100%; }
+.studio-prompt {
+  display: flex;
+  gap: 8px;
+}
+.studio-prompt textarea {
+  flex: 1;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  resize: none;
+  min-height: 60px;
+  outline: none;
+  transition: border-color var(--duration) var(--ease);
+}
+.studio-prompt textarea:focus { border-color: var(--border-accent); }
+.studio-prompt textarea::placeholder { color: var(--text-disabled); }
+
+/* ── Journal Panel ── */
+.journal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.journal-entry {
+  display: grid;
+  grid-template-columns: 140px 12px 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+}
+.journal-entry:last-child { border-bottom: none; }
+.journal-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: right;
+  padding-top: 2px;
+}
+.journal-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.journal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  z-index: 1;
+}
+.journal-dot.output { border-color: var(--accent-primary); background: var(--accent-primary); }
+.journal-dot.win { border-color: var(--status-ok); background: var(--status-ok); }
+.journal-dot.learning { border-color: var(--status-info); background: var(--status-info); }
+.journal-dot.error { border-color: var(--status-error); background: var(--status-error); }
+.journal-connector {
+  flex: 1;
+  width: 1px;
+  background: var(--border-subtle);
+}
+.journal-content { min-width: 0; }
+.journal-entry-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.journal-entry-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.journal-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.journal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.journal-tag.output { background: rgba(0,217,146,0.1); color: var(--accent-primary); }
+.journal-tag.win { background: rgba(16,185,129,0.1); color: var(--status-ok); }
+.journal-tag.learning { background: rgba(76,179,212,0.1); color: var(--status-info); }
+.journal-tag.error { background: rgba(232,86,113,0.1); color: var(--status-error); }
+
+/* ── Mission Control Panel ── */
+.mc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  height: 100%;
+}
+.mc-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mc-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mc-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.mc-metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1;
+}
+.mc-metric-unit {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.mc-metric-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.mc-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 32px;
+  margin-top: auto;
+}
+.mc-sparkline-bar {
+  flex: 1;
+  background: var(--accent-primary);
+  border-radius: 1px 1px 0 0;
+  opacity: 0.3;
+  min-height: 2px;
+  transition: opacity var(--duration) var(--ease);
+}
+.mc-sparkline-bar:last-child { opacity: 1; }
+.mc-sparkline-bar:hover { opacity: 0.7; }
+
+/* Agent Status Grid */
+.mc-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.mc-agent-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+  transition: all var(--duration) var(--ease);
+}
+.mc-agent-card:hover { border-color: var(--border-accent); }
+.mc-agent-card .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  margin: 0 auto 6px;
+}
+.mc-agent-card .name {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.mc-agent-card .task {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mc-agent-card .status-bar {
+  height: 2px;
+  border-radius: 1px;
+  margin-top: 6px;
+  background: var(--bg-active);
+  overflow: hidden;
+}
+.mc-agent-card .status-bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 300ms var(--ease);
+}
+
+/* Activity Feed */
+.mc-activity {
+  grid-column: 1 / -1;
+  overflow-y: auto;
+  max-height: 200px;
+}
+.mc-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.mc-activity-item:last-child { border-bottom: none; }
+.mc-activity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.mc-activity-text { flex: 1; color: var(--text-secondary); }
+.mc-activity-text strong { color: var(--text-primary); font-weight: 500; }
+.mc-activity-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ── Empty State ── */
+.os-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  gap: 8px;
+}
+.os-empty .icon { width: 40px; height: 40px; opacity: 0.3; }
+.os-empty .text { font-size: 13px; }
+.os-empty .hint { font-size: 11px; color: var(--text-disabled); }
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+  .mc-grid { grid-template-columns: repeat(2, 1fr); }
+  .mc-agent-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  :root { --sidebar-w: 56px; }
+  .os-agent-info, .os-agent-badge, .os-sidebar-label, .os-nav-item span:not(.os-nav-icon) { display: none; }
+  .os-agent { justify-content: center; padding: 8px; }
+  .kanban-board { grid-template-columns: repeat(2, 1fr); }
+  .vault-grid { grid-template-columns: 1fr; }
+  .vault-tree { display: none; }
+  .studio-grid { grid-template-columns: 1fr; }
+  .studio-tools { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="os-shell">
+
+  <!-- ═══ Header ═══ -->
+  <header class="os-header">
+    <div class="os-header-left">
+      <div class="os-logo">
+        <svg class="os-logo-bolt" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span>Agent OS</span>
+      </div>
+      <span class="os-subtitle">Mission Control</span>
+    </div>
+    <div class="os-header-right">
+      <span class="os-health-pill ok" id="osHealthPill">
+        <span class="os-health-dot"></span>
+        <span>All Systems</span>
+      </span>
+      <span class="os-clock" id="osClock">00:00:00</span>
+    </div>
+  </header>
+
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="os-sidebar">
+
+    <!-- Agents -->
+    <div class="os-sidebar-section">
+      <div class="os-sidebar-label">Agents</div>
+      <div class="os-agent-list">
+        <div class="os-agent os-agent-hermes active" data-agent="hermes" style="--agent-color: var(--agent-hermes)">
+          <div class="os-agent-avatar">H</div>
+          <div class="os-agent-info">
+            <div class="os-agent-name">Hermes</div>
+            <div class="os-agent-role">Orchestrator</div>
+          </div>
+          <span class="os-agent-badge orchestrate">Core</span>
+          <span class="os-agent-status online"></span>
+        </div>
+        <div class="os-agent os-agent-claude" data-agent="claude" style="--agent-color: var(--agent-claude)">
+          <div class="os-agent-avatar">C</div>
+          <div class="os-agent-info">
+            <div class="os-agent-name">Claude Code</div>
+            <div class="os-agent-role">Developer</div>
+          </div>
+          <span class="os-agent-badge free">Free</span>
+          <span class="os-agent-status online"></span>
+        </div>
+        <div class="os-agent os-agent-antigravity" data-agent="antigravity" style="--agent-color: var(--agent-antigravity)">
+          <div class="os-agent-avatar">A</div>
+          <div class="os-agent-info">
+            <div class="os-agent-name">Antigravity</div>
+            <div class="os-agent-role">Researcher</div>
+          </div>
+          <span class="os-agent-badge free">Free</span>
+          <span class="os-agent-status online"></span>
+        </div>
+        <div class="os-agent os-agent-codex" data-agent="codex" style="--agent-color: var(--agent-codex)">
+          <div class="os-agent-avatar">X</div>
+          <div class="os-agent-info">
+            <div class="os-agent-name">Codex</div>
+            <div class="os-agent-role">Coder</div>
+          </div>
+          <span class="os-agent-badge free">Free</span>
+          <span class="os-agent-status busy"></span>
+        </div>
+        <div class="os-agent os-agent-openclaw" data-agent="openclaw" style="--agent-color: var(--agent-openclaw)">
+          <div class="os-agent-avatar">O</div>
+          <div class="os-agent-info">
+            <div class="os-agent-name">OpenClaw</div>
+            <div class="os-agent-role">Executor</div>
+          </div>
+          <span class="os-agent-badge free">Free</span>
+          <span class="os-agent-status online"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="os-sidebar-nav">
+      <div class="os-sidebar-label">Panels</div>
+      <div class="os-nav-item active" data-panel="mission-control">
+        <svg class="os-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 4.5L16 6.5l-4 3.5 1 5L8 12.5 2.5 15l1-5L0 6.5l5.5-1z"/></svg>
+        <span>Mission Control</span>
+      </div>
+      <div class="os-nav-item" data-panel="vault">
+        <svg class="os-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3a2 2 0 012-2h4l2 2h5a2 2 0 012 2v8a2 2 0 01-2 2H3a2 2 0 01-2-2V3z"/></svg>
+        <span>Obsidian Vault</span>
+        <span class="os-nav-badge">142</span>
+      </div>
+      <div class="os-nav-item" data-panel="kanban">
+        <svg class="os-nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="4" height="14" rx="1"/><rect x="7" y="1" width="4" height="14" rx="1"/><rect x="13" y="1" width="2" height="14" rx="1"/></svg>
+        <span>Kanban Swarm</span>
+        <span class="os-nav-badge">8</span>
+      </div>
+      <div class="os-nav-item" data-panel="studio">
+        <svg class="os-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 3a2 2 0 100 4 2 2 0 000-4z"/></svg>
+        <span>Studio</span>
+      </div>
+      <div class="os-nav-item" data-panel="journal">
+        <svg class="os-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v12H2V2zm2 2v8h8V4H4zm2 2h4v2H6V6z"/></svg>
+        <span>Journal</span>
+        <span class="os-nav-badge">24</span>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ═══ Main Content ═══ -->
+  <main class="os-main">
+
+    <!-- Health Bar -->
+    <div class="os-health-bar" id="osHealthBar">
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Hermes</span>
+        <span class="value">online</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Claude Code</span>
+        <span class="value">online</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Antigravity</span>
+        <span class="value">online</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot warn"></span>
+        <span class="label">Codex</span>
+        <span class="value">busy</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">OpenClaw</span>
+        <span class="value">online</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Vault</span>
+        <span class="value">142 notes</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Kanban</span>
+        <span class="value">8 active</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Studio</span>
+        <span class="value">3 tools</span>
+      </div>
+      <div class="os-health-item">
+        <span class="dot ok"></span>
+        <span class="label">Journal</span>
+        <span class="value">24 entries</span>
+      </div>
+    </div>
+
+    <!-- Panel Container -->
+    <div class="os-panel-container">
+
+      <!-- ── Mission Control Panel ── -->
+      <div class="os-panel active" id="panel-mission-control">
+        <div class="os-panel-header">
+          <div class="os-panel-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 4.5L16 6.5l-4 3.5 1 5L8 12.5 2.5 15l1-5L0 6.5l5.5-1z"/></svg>
+            Mission Control
+          </div>
+          <div class="os-panel-actions">
+            <button class="os-btn os-btn-icon" title="Refresh">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 110 12 6 6 0 010-12zm0 2v4l3 2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="os-panel-body">
+          <div class="mc-grid">
+
+            <!-- Agent Status -->
+            <div class="mc-card" style="grid-column: 1 / -1">
+              <div class="mc-card-title">Agent Fleet</div>
+              <div class="mc-agent-grid">
+                <div class="mc-agent-card">
+                  <div class="avatar" style="background:rgba(0,217,146,0.15);color:#00d992">H</div>
+                  <div class="name">Hermes</div>
+                  <div class="task">Orchestrating</div>
+                  <div class="status-bar"><div class="status-bar-fill" style="width:100%;background:#00d992"></div></div>
+                </div>
+                <div class="mc-agent-card">
+                  <div class="avatar" style="background:rgba(245,78,0,0.15);color:#f54e00">C</div>
+                  <div class="name">Claude Code</div>
+                  <div class="task">Idle</div>
+                  <div class="status-bar"><div class="status-bar-fill" style="width:100%;background:#f54e00"></div></div>
+                </div>
+                <div class="mc-agent-card">
+                  <div class="avatar" style="background:rgba(129,140,248,0.15);color:#818cf8">A</div>
+                  <div class="name">Antigravity</div>
+                  <div class="task">Idle</div>
+                  <div class="status-bar"><div class="status-bar-fill" style="width:100%;background:#818cf8"></div></div>
+                </div>
+                <div class="mc-agent-card">
+                  <div class="avatar" style="background:rgba(240,192,76,0.15);color:#f0c04c">X</div>
+                  <div class="name">Codex</div>
+                  <div class="task">Building feature</div>
+                  <div class="status-bar"><div class="status-bar-fill" style="width:65%;background:#f0c04c"></div></div>
+                </div>
+                <div class="mc-agent-card">
+                  <div class="avatar" style="background:rgba(232,86,113,0.15);color:#e85671">O</div>
+                  <div class="name">OpenClaw</div>
+                  <div class="task">Idle</div>
+                  <div class="status-bar"><div class="status-bar-fill" style="width:100%;background:#e85671"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tasks Metric -->
+            <div class="mc-card">
+              <div class="mc-card-title">Active Tasks</div>
+              <div class="mc-metric">
+                <span class="mc-metric-value">8</span>
+                <span class="mc-metric-unit">/ 12</span>
+              </div>
+              <div class="mc-metric-label">4 in progress, 3 in review</div>
+              <div class="mc-sparkline">
+                <div class="mc-sparkline-bar" style="height:30%"></div>
+                <div class="mc-sparkline-bar" style="height:45%"></div>
+                <div class="mc-sparkline-bar" style="height:35%"></div>
+                <div class="mc-sparkline-bar" style="height:60%"></div>
+                <div class="mc-sparkline-bar" style="height:50%"></div>
+                <div class="mc-sparkline-bar" style="height:75%"></div>
+                <div class="mc-sparkline-bar" style="height:65%"></div>
+                <div class="mc-sparkline-bar" style="height:80%"></div>
+                <div class="mc-sparkline-bar" style="height:70%"></div>
+                <div class="mc-sparkline-bar" style="height:90%"></div>
+                <div class="mc-sparkline-bar" style="height:85%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+              </div>
+            </div>
+
+            <!-- Outputs Metric -->
+            <div class="mc-card">
+              <div class="mc-card-title">Outputs Today</div>
+              <div class="mc-metric">
+                <span class="mc-metric-value">24</span>
+                <span class="mc-metric-unit">items</span>
+              </div>
+              <div class="mc-metric-label">6 images, 2 videos, 16 logs</div>
+              <div class="mc-sparkline">
+                <div class="mc-sparkline-bar" style="height:20%"></div>
+                <div class="mc-sparkline-bar" style="height:40%"></div>
+                <div class="mc-sparkline-bar" style="height:30%"></div>
+                <div class="mc-sparkline-bar" style="height:55%"></div>
+                <div class="mc-sparkline-bar" style="height:45%"></div>
+                <div class="mc-sparkline-bar" style="height:70%"></div>
+                <div class="mc-sparkline-bar" style="height:60%"></div>
+                <div class="mc-sparkline-bar" style="height:85%"></div>
+                <div class="mc-sparkline-bar" style="height:75%"></div>
+                <div class="mc-sparkline-bar" style="height:95%"></div>
+                <div class="mc-sparkline-bar" style="height:90%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+              </div>
+            </div>
+
+            <!-- Health Metric -->
+            <div class="mc-card">
+              <div class="mc-card-title">System Health</div>
+              <div class="mc-metric">
+                <span class="mc-metric-value" style="color:var(--status-ok)">98</span>
+                <span class="mc-metric-unit">%</span>
+              </div>
+              <div class="mc-metric-label">All systems nominal</div>
+              <div class="mc-sparkline">
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:95%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:90%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:95%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+                <div class="mc-sparkline-bar" style="height:100%"></div>
+              </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="mc-card mc-activity">
+              <div class="mc-card-title">Live Activity</div>
+              <div class="mc-activity-item">
+                <span class="mc-activity-dot" style="background:var(--accent-primary)"></span>
+                <span class="mc-activity-text"><strong>Hermes</strong> assigned "Build auth module" to Claude Code</span>
+                <span class="mc-activity-time">2m ago</span>
+              </div>
+              <div class="mc-activity-item">
+                <span class="mc-activity-dot" style="background:var(--agent-codex)"></span>
+                <span class="mc-activity-text"><strong>Codex</strong> completed "API endpoint scaffolding"</span>
+                <span class="mc-activity-time">5m ago</span>
+              </div>
+              <div class="mc-activity-item">
+                <span class="mc-activity-dot" style="background:var(--status-ok)"></span>
+                <span class="mc-activity-text"><strong>Studio</strong> generated 3 product images</span>
+                <span class="mc-activity-time">12m ago</span>
+              </div>
+              <div class="mc-activity-item">
+                <span class="mc-activity-dot" style="background:var(--agent-antigravity)"></span>
+                <span class="mc-activity-text"><strong>Antigravity</strong> imported 5 new sources to vault</span>
+                <span class="mc-activity-time">18m ago</span>
+              </div>
+              <div class="mc-activity-item">
+                <span class="mc-activity-dot" style="background:var(--status-info)"></span>
+                <span class="mc-activity-text"><strong>Journal</strong> logged 3 new learnings</span>
+                <span class="mc-activity-time">25m ago</span>
+              </div>
+              <div class="mc-activity-item">
+                <span class="mc-activity-dot" style="background:var(--agent-openclaw)"></span>
+                <span class="mc-activity-text"><strong>OpenClaw</strong> deployed staging build</span>
+                <span class="mc-activity-time">32m ago</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Vault Panel ── -->
+      <div class="os-panel" id="panel-vault">
+        <div class="os-panel-header">
+          <div class="os-panel-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3a2 2 0 012-2h4l2 2h5a2 2 0 012 2v8a2 2 0 01-2 2H3a2 2 0 01-2-2V3z"/></svg>
+            Obsidian Vault
+          </div>
+          <div class="os-panel-actions">
+            <button class="os-btn"><span>New Note</span></button>
+            <button class="os-btn primary"><span>Search</span></button>
+          </div>
+        </div>
+        <div class="os-panel-body">
+          <div class="vault-grid">
+            <div class="vault-tree">
+              <div class="vault-tree-item active">
+                <span class="icon">📄</span>
+                <span class="name">README.md</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📁</span>
+                <span class="name">Clients</span>
+                <span class="badge">12</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📁</span>
+                <span class="name">Projects</span>
+                <span class="badge">8</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📁</span>
+                <span class="name">Voice & Style</span>
+                <span class="badge">3</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📁</span>
+                <span class="name">Business</span>
+                <span class="badge">5</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📁</span>
+                <span class="name">Agents</span>
+                <span class="badge">6</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📁</span>
+                <span class="name">Learnings</span>
+                <span class="badge">24</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📄</span>
+                <span class="name">Daily Notes</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📄</span>
+                <span class="name">Meeting Notes</span>
+              </div>
+              <div class="vault-tree-item">
+                <span class="icon">📄</span>
+                <span class="name">Ideas.md</span>
+              </div>
+            </div>
+            <div class="vault-editor">
+              <div class="vault-editor-header">
+                <span class="vault-editor-title">README.md</span>
+                <span style="font-size:11px;color:var(--text-tertiary)">Last edited: today</span>
+              </div>
+              <div class="vault-editor-body"># Agent OS — Context Hub
+
+This vault is the persistent memory for Agent OS.
+Every chat starts here. Every agent reads this first.
+
+## Who I Am
+- **Name:** LITON
+- **What to call them:** LITON
+- **Timezone:** TBD
+
+## Business Context
+- Building Agent OS — a Mission Control dashboard for autonomous AI agents
+- 5 agents: Hermes (orchestrator), Claude Code, Antigravity, Codex, OpenClaw
+- All free agents, no paid subscriptions required
+
+## Voice & Style
+- Direct, no fluff
+- Technical but accessible
+- Terminal-native aesthetic
+
+## Active Projects
+1. Agent OS Dashboard (this project)
+2. HyperFrames video pipeline
+3. NotebookLM integration
+
+## Key Decisions
+- Design: Void-black canvas, emerald signal-green (VoltAgent-inspired)
+- Architecture: Single-page app, panel-based, sidebar navigation
+- Agents coordinate through Hermes as orchestrator</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Kanban Panel ── -->
+      <div class="os-panel" id="panel-kanban">
+        <div class="os-panel-header">
+          <div class="os-panel-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="4" height="14" rx="1"/><rect x="7" y="1" width="4" height="14" rx="1"/><rect x="13" y="1" width="2" height="14" rx="1"/></svg>
+            Kanban Swarm
+          </div>
+          <div class="os-panel-actions">
+            <button class="os-btn"><span>Filter</span></button>
+            <button class="os-btn primary"><span>+ New Card</span></button>
+          </div>
+        </div>
+        <div class="os-panel-body">
+          <div class="kanban-board">
+
+            <!-- Todo -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title" style="color:var(--kanban-todo)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--kanban-todo)"></span>
+                  Todo
+                </div>
+                <span class="kanban-col-count">3</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Design system tokens</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p2"></span>
+                    <span class="kanban-card-agent" style="background:rgba(245,78,0,0.1);color:#f54e00">Claude</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-title">API rate limiting</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p3"></span>
+                    <span class="kanban-card-agent" style="background:rgba(240,192,76,0.1);color:#f0c04c">Codex</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-title">User onboarding flow</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p4"></span>
+                    <span class="kanban-card-agent" style="background:rgba(129,140,248,0.1);color:#818cf8">Anti</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- In Progress -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title" style="color:var(--kanban-progress)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--kanban-progress)"></span>
+                  In Progress
+                </div>
+                <span class="kanban-col-count">2</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Build auth module</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p1"></span>
+                    <span class="kanban-card-agent" style="background:rgba(245,78,0,0.1);color:#f54e00">Claude</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Studio panel integration</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p2"></span>
+                    <span class="kanban-card-agent" style="background:rgba(232,86,113,0.1);color:#e85671">Claw</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title" style="color:var(--kanban-review)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--kanban-review)"></span>
+                  Review
+                </div>
+                <span class="kanban-col-count">2</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Dashboard layout PR</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p2"></span>
+                    <span class="kanban-card-agent" style="background:rgba(0,217,146,0.1);color:#00d992">Hermes</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-title">NotebookLM sync</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p3"></span>
+                    <span class="kanban-card-agent" style="background:rgba(129,140,248,0.1);color:#818cf8">Anti</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Done -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title" style="color:var(--kanban-done)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--kanban-done)"></span>
+                  Done
+                </div>
+                <span class="kanban-col-count">5</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card" style="opacity:0.6">
+                  <div class="kanban-card-title">API endpoint scaffolding</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p3"></span>
+                    <span class="kanban-card-agent" style="background:rgba(240,192,76,0.1);color:#f0c04c">Codex</span>
+                  </div>
+                </div>
+                <div class="kanban-card" style="opacity:0.6">
+                  <div class="kanban-card-title">HyperFrames install</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p3"></span>
+                    <span class="kanban-card-agent" style="background:rgba(0,217,146,0.1);color:#00d992">Hermes</span>
+                  </div>
+                </div>
+                <div class="kanban-card" style="opacity:0.6">
+                  <div class="kanban-card-title">nlm-skill setup</div>
+                  <div class="kanban-card-meta">
+                    <span class="kanban-card-priority p3"></span>
+                    <span class="kanban-card-agent" style="background:rgba(0,217,146,0.1);color:#00d992">Hermes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Studio Panel ── -->
+      <div class="os-panel" id="panel-studio">
+        <div class="os-panel-header">
+          <div class="os-panel-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 3a2 2 0 100 4 2 2 0 000-4z"/></svg>
+            Studio
+          </div>
+          <div class="os-panel-actions">
+            <button class="os-btn primary"><span>Generate</span></button>
+          </div>
+        </div>
+        <div class="os-panel-body">
+          <div class="studio-grid">
+            <div class="studio-tools">
+              <div class="studio-tool active">
+                <span class="icon">🖼️</span>
+                <span class="label">Image Gen</span>
+                <span class="status ready"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">🎬</span>
+                <span class="label">Video Gen</span>
+                <span class="status ready"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">🎙️</span>
+                <span class="label">Speech (TTS)</span>
+                <span class="status ready"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">🎵</span>
+                <span class="label">Music Gen</span>
+                <span class="status"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">📊</span>
+                <span class="label">Infographic</span>
+                <span class="status"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">🎨</span>
+                <span class="label">ASCII Art</span>
+                <span class="status ready"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">📐</span>
+                <span class="label">Diagrams</span>
+                <span class="status ready"></span>
+              </div>
+              <div class="studio-tool">
+                <span class="icon">🎥</span>
+                <span class="label">HyperFrames</span>
+                <span class="status ready"></span>
+              </div>
+            </div>
+            <div class="studio-workspace">
+              <div class="studio-workspace-header">
+                <span style="font-size:13px;font-weight:600">Image Generation</span>
+                <span style="font-size:11px;color:var(--text-tertiary)">FAL / OpenAI backend</span>
+              </div>
+              <div class="studio-workspace-body">
+                <div class="studio-output">
+                  <div class="os-empty">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <span class="text">Enter a prompt to generate</span>
+                    <span class="hint">Output appears here</span>
+                  </div>
+                </div>
+                <div class="studio-prompt">
+                  <textarea placeholder="Describe what you want to generate...&#10;&#10;Examples:&#10;• A dark-themed dashboard UI mockup&#10;• Product hero image for Agent OS&#10;• Technical architecture diagram"></textarea>
+                  <button class="os-btn primary" style="align-self:flex-end;height:36px">Generate</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Journal Panel ── -->
+      <div class="os-panel" id="panel-journal">
+        <div class="os-panel-header">
+          <div class="os-panel-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v12H2V2zm2 2v8h8V4H4zm2 2h4v2H6V6z"/></svg>
+            Journal
+          </div>
+          <div class="os-panel-actions">
+            <button class="os-btn"><span>Filter</span></button>
+            <button class="os-btn primary"><span>+ Log Entry</span></button>
+          </div>
+        </div>
+        <div class="os-panel-body">
+          <div class="journal-timeline">
+
+            <div class="journal-entry">
+              <div class="journal-time">Today, 14:32</div>
+              <div class="journal-line">
+                <div class="journal-dot output"></div>
+                <div class="journal-connector"></div>
+              </div>
+              <div class="journal-content">
+                <div class="journal-entry-title">Agent OS dashboard built</div>
+                <div class="journal-entry-desc">Complete Mission Control shell with 5 panels, sidebar agent fleet, health bar, and all navigation wired.</div>
+                <div class="journal-entry-meta">
+                  <span class="journal-tag output">Output</span>
+                  <span>Hermes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="journal-entry">
+              <div class="journal-time">Today, 14:28</div>
+              <div class="journal-line">
+                <div class="journal-dot win"></div>
+                <div class="journal-connector"></div>
+              </div>
+              <div class="journal-content">
+                <div class="journal-entry-title">HyperFrames installed</div>
+                <div class="journal-entry-desc">Video composition tool ready. FFmpeg 7.0.2-static installed at ~/bin/. Chrome headless shell pre-cached.</div>
+                <div class="journal-entry-meta">
+                  <span class="journal-tag win">Win</span>
+                  <span>Hermes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="journal-entry">
+              <div class="journal-time">Today, 14:15</div>
+              <div class="journal-line">
+                <div class="journal-dot learning"></div>
+                <div class="journal-connector"></div>
+              </div>
+              <div class="journal-content">
+                <div class="journal-entry-title">Static FFmpeg install pattern</div>
+                <div class="journal-entry-desc">When sudo isn't available, download johnvansickle.com static build. Extract to ~/bin. Add to PATH in .bashrc. Works without root.</div>
+                <div class="journal-entry-meta">
+                  <span class="journal-tag learning">Learning</span>
+                  <span>Hermes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="journal-entry">
+              <div class="journal-time">Today, 13:45</div>
+              <div class="journal-line">
+                <div class="journal-dot output"></div>
+                <div class="journal-connector"></div>
+              </div>
+              <div class="journal-content">
+                <div class="journal-entry-title">nlm-skill verified</div>
+                <div class="journal-entry-desc">NotebookLM CLI v0.6.15 confirmed. Both nlm and notebooklm-mcp ready. Authentication required before first use.</div>
+                <div class="journal-entry-meta">
+                  <span class="journal-tag output">Output</span>
+                  <span>Hermes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="journal-entry">
+              <div class="journal-time">Today, 13:20</div>
+              <div class="journal-line">
+                <div class="journal-dot win"></div>
+                <div class="journal-connector"></div>
+              </div>
+              <div class="journal-content">
+                <div class="journal-entry-title">Popular Web Designs catalog loaded</div>
+                <div class="journal-entry-desc">54 design system templates available. Linear, VoltAgent, Cursor templates reviewed for Agent OS design language.</div>
+                <div class="journal-entry-meta">
+                  <span class="journal-tag win">Win</span>
+                  <span>Hermes</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// Agent OS — Mission Control Logic
+// ═══════════════════════════════════════════
+
+(function() {
+  'use strict';
+
+  // ── Clock ──
+  function updateClock() {
+    const now = new Date();
+    const el = document.getElementById('osClock');
+    if (el) el.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Panel Navigation ──
+  const navItems = document.querySelectorAll('.os-nav-item');
+  const panels = document.querySelectorAll('.os-panel');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const panelId = item.dataset.panel;
+      if (!panelId) return;
+
+      // Update nav
+      navItems.forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+
+      // Update panels
+      panels.forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('panel-' + panelId);
+      if (target) target.classList.add('active');
+    });
+  });
+
+  // ── Agent Selection ──
+  const agents = document.querySelectorAll('.os-agent');
+  agents.forEach(agent => {
+    agent.addEventListener('click', () => {
+      agents.forEach(a => a.classList.remove('active'));
+      agent.classList.add('active');
+    });
+  });
+
+  // ── Health Simulation ──
+  const healthItems = document.querySelectorAll('.os-health-item .dot');
+  const healthPill = document.getElementById('osHealthPill');
+
+  function simulateHealth() {
+    // Randomly fluctuate one health indicator
+    const idx = Math.floor(Math.random() * healthItems.length);
+    const dot = healthItems[idx];
+    const states = ['ok', 'ok', 'ok', 'ok', 'warn', 'ok']; // mostly ok
+    const state = states[Math.floor(Math.random() * states.length)];
+    dot.className = 'dot ' + state;
+
+    // Update pill
+    const allOk = Array.from(healthItems).every(d => d.classList.contains('ok'));
+    const anyWarn = Array.from(healthItems).some(d => d.classList.contains('warn'));
+    if (allOk) {
+      healthPill.className = 'os-health-pill ok';
+      healthPill.innerHTML = '<span class="os-health-dot"></span><span>All Systems</span>';
+    } else if (anyWarn) {
+      healthPill.className = 'os-health-pill warn';
+      healthPill.innerHTML = '<span class="os-health-dot"></span><span>Degraded</span>';
+    }
+  }
+  setInterval(simulateHealth, 8000);
+
+  // ── Sparkline Animation ──
+  document.querySelectorAll('.mc-sparkline').forEach(sparkline => {
+    const bars = sparkline.querySelectorAll('.mc-sparkline-bar');
+    setInterval(() => {
+      bars.forEach(bar => {
+        const h = 20 + Math.random() * 80;
+        bar.style.height = h + '%';
+      });
+    , 3000);
+  });
+
+  // ── Activity Feed Simulation ──
+  const activities = [
+    { agent: 'Hermes', color: '#00d992', text: 'rebalanced task queue' },
+    { agent: 'Claude', color: '#f54e00', text: 'pushed commit to feature branch' },
+    { agent: 'Codex', color: '#f0c04c', text: 'completed code review' },
+    { agent: 'Anti', color: '#818cf8', text: 'synced 3 new sources' },
+    { agent: 'Claw', color: '#e85671', text: 'deployed to staging' },
+    { agent: 'Studio', color: '#00d992', text: 'generated 2 images' },
+  ];
+
+  function addActivity() {
+    const feed = document.querySelector('.mc-activity');
+    if (!feed) return;
+    const a = activities[Math.floor(Math.random() * activities.length)];
+    const item = document.createElement('div');
+    item.className = 'mc-activity-item';
+    item.innerHTML = `
+      <span class="mc-activity-dot" style="background:${a.color}"></span>
+      <span class="mc-activity-text"><strong>${a.agent}</strong> ${a.text}</span>
+      <span class="mc-activity-time">Just now</span>
+    `;
+    feed.insertBefore(item, feed.firstChild);
+    if (feed.children.length > 10) feed.removeChild(feed.lastChild);
+  }
+  setInterval(addActivity, 12000);
+
+  // ── Kanban Card Drag (visual only) ──
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      card.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '1';
+    });
+  });
+  document.querySelectorAll('.kanban-col-body').forEach(col => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    col.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const card = document.querySelector('.kanban-card[style*="opacity: 0.5"]');
+      if (card) col.appendChild(card);
+    });
+  });
+  document.querySelectorAll('.kanban-card').forEach(c => c.setAttribute('draggable', 'true'));
+
+  // ── Studio Tool Selection ──
+  document.querySelectorAll('.studio-tool').forEach(tool => {
+    tool.addEventListener('click', () => {
+      document.querySelectorAll('.studio-tool').forEach(t => t.classList.remove('active'));
+      tool.classList.add('active');
+    });
+  });
+
+  // ── Vault Tree Selection ──
+  document.querySelectorAll('.vault-tree-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.vault-tree-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  console.log('%c Agent OS ', 'background:#00d992;color:#030304;font-weight:700;padding:2px 8px;border-radius:3px;');
+  console.log('%c Mission Control initialized ', 'color:#8b949e;');
+})();
+</script>
+</body>
+</html>
