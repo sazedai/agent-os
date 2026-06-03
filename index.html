@@ -470,8 +470,8 @@ body {
             <div class="os-agent-name">OpenClaw</div>
             <div class="os-agent-role">Executor</div>
           </div>
-          <span class="os-agent-badge free">Free</span>
-          <span class="os-agent-status online"></span>
+          <span class="os-agent-badge free">Gateway</span>
+          <span class="os-agent-status online" id="openclawStatus"></span>
         </div>
       </div>
     </div>
@@ -1403,9 +1403,11 @@ This vault is the persistent memory for Agent OS.
     });
   });
 
-  // ═══ Terminal ═══
+  // ═══ Terminal (OpenClaw Integration) ═══
   const terminalOutput = document.getElementById('terminalOutput');
   const terminalInput = document.getElementById('terminalInput');
+  let openclawWs = null;
+  let openclawConnected = false;
 
   function terminalPrint(text, type) {
     if (!terminalOutput) return;
@@ -1416,33 +1418,144 @@ This vault is the persistent memory for Agent OS.
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
   }
 
-  const terminalCommands = {
-    help: () => {
-      return [
-        'Available commands:',
-        '  help          Show this help',
-        '  status        System status overview',
-        '  agents        List all agents',
-        '  clear         Clear terminal',
-        '  date          Show current time',
-        '  whoami        Current user',
-        '  panels        List available panels',
-        '  version       Agent OS version',
-      ];
+  // Connect to OpenClaw gateway via WebSocket
+  // Uses the OpenClaw Gateway Protocol v4
+  function connectOpenClaw() {
+    try {
+      openclawWs = new WebSocket('ws://127.0.0.1:18789');
+      openclawWs.onopen = () => {
+        // Send connect handshake
+        const connectMsg = {
+          type: 'req',
+          id: 'agent-os-' + Date.now(),
+          method: 'connect',
+          params: {
+            minProtocol: 3,
+            maxProtocol: 4,
+            client: { id: 'agent-os', version: '0.1.0', platform: 'web', mode: 'operator' },
+            role: 'operator',
+            scopes: ['operator.read', 'operator.write'],
+            auth: { token: '6c2dc18b3a00d39d90b06383739e320553ef7e560e541aa4' },
+            locale: 'en-US',
+            userAgent: 'agent-os/0.1.0'
+          }
+        };
+        openclawWs.send(JSON.stringify(connectMsg));
+      };
+      openclawWs.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'res' && data.ok) {
+            openclawConnected = true;
+            terminalPrint('[OpenClaw] Connected to gateway', 'success');
+          } else if (data.type === 'event') {
+            if (data.event === 'agent.message' || data.event === 'chat.message') {
+              const content = data.payload && (data.payload.content || data.payload.text || JSON.stringify(data.payload));
+              terminalPrint('[OpenClaw] ' + content, 'response');
+            } else if (data.event === 'agent.typing') {
+              // ignore typing events
+            } else {
+              terminalPrint('[OpenClaw] ' + JSON.stringify(data.payload || data), 'response');
+            }
+          } else if (data.type === 'res' && !data.ok) {
+            terminalPrint('[OpenClaw] Error: ' + (data.error || JSON.stringify(data)), 'error');
+          } else {
+            terminalPrint('[OpenClaw] ' + JSON.stringify(data), 'response');
+          }
+        } catch(e) {
+          terminalPrint('[OpenClaw] ' + event.data, 'response');
+        }
+      };
+      openclawWs.onclose = () => {
+        openclawConnected = false;
+        terminalPrint('[OpenClaw] Disconnected from gateway', 'info');
+      };
+      openclawWs.onerror = () => {
+        openclawConnected = false;
+        terminalPrint('[OpenClaw] Connection failed — is the gateway running? (openclaw gateway start)', 'error');
+      };
+    } catch(e) {
+      terminalPrint('[OpenClaw] WebSocket error: ' + e.message, 'error');
+    }
+  }
+
+  // Send a message to OpenClaw agent
+  function sendToOpenClaw(text) {
+    if (!openclawWs || openclawWs.readyState !== WebSocket.OPEN) {
+      terminalPrint('[OpenClaw] Not connected', 'error');
+      return;
+    }
+    const msg = {
+      type: 'req',
+      id: 'agent-os-msg-' + Date.now(),
+      method: 'agent.talk',
+      params: { message: text }
+    };
+    openclawWs.send(JSON.stringify(msg));
+  }
+
+  // Auto-connect on terminal panel switch
+  const origSwitchPanel = switchPanel;
+  // We'll connect lazily on first terminal use
+  let openclawTried = false;
+
+  function ensureOpenClaw() {
+    if (!openclawTried) {
+      openclawTried = true;
+      terminalPrint('[OpenClaw] Attempting gateway connection...', 'info');
+      connectOpenClaw();
+    } else if (!openclawConnected && openclawWs && openclawWs.readyState === WebSocket.CLOSED) {
+      // Reconnect
+      connectOpenClaw();
+    }
+  }
+
+  // Poll OpenClaw gateway health for sidebar indicator
+  function checkOpenClawHealth() {
+    const statusEl = document.getElementById('openclawStatus');
+    if (!statusEl) return;
+    fetch('http://127.0.0.1:18789/health').then(r => {
+      if (r.ok) { statusEl.className = 'os-agent-status online'; }
+      else { statusEl.className = 'os-agent-status busy'; }
+    }).catch(() => {
+      statusEl.className = 'os-agent-status offline';
+    });
+  }
+  setInterval(checkOpenClawHealth, 15000);
+  checkOpenClawHealth();
+
+  // Local fallback commands (work without OpenClaw)
+  const localCommands = {
+    help: () => [
+      'Agent OS Terminal v0.1.0 — OpenClaw Integrated',
+      '',
+      'Local commands:',
+      '  help          Show this help',
+      '  status        Agent OS system status',
+      '  agents        List agent fleet',
+      '  clear         Clear terminal',
+      '  date          Show current time',
+      '  whoami        Current user',
+      '  panels        List panels',
+      '  version       Version info',
+      '  openclaw      Show OpenClaw connection status',
+      '',
+      'Any other input is sent to OpenClaw gateway (if connected).',
+    ],
+    status: () => ['Agent OS v0.1.0', 'All systems nominal', '5 agents online', '7 panels active', 'Health: 98%', 'OpenClaw: ' + (openclawConnected ? 'connected' : 'disconnected')],
+    agents: () => ['Agent Fleet:', '  Hermes      [ONLINE]  Orchestrator (Core)', '  Claude Code [ONLINE]  Developer', '  Antigravity [ONLINE]  Researcher', '  Codex       [BUSY]    Coder', '  OpenClaw    [ONLINE]  Executor (Gateway: ' + (openclawConnected ? 'connected' : 'disconnected') + ')'],
+    date: () => { const opts = { timeZone: state.timezone, weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !state.clock24h }; return [new Intl.DateTimeFormat('en-US', opts).format(new Date())]; },
+    whoami: () => ['agent@localhost'],
+    panels: () => ['Panels:', '  1. Mission Control', '  2. Obsidian Vault', '  3. Kanban Swarm', '  4. Studio', '  5. Journal', '  6. Terminal (OpenClaw)', '  7. Settings'],
+    version: () => ['Agent OS v0.1.0', 'OpenClaw ' + (openclawConnected ? 'connected' : 'disconnected'), 'Single-file HTML/CSS/JS dashboard'],
+    openclaw: () => {
+      if (openclawConnected) return ['OpenClaw: CONNECTED', 'Gateway: ws://127.0.0.1:18789', 'Type any message to send to OpenClaw agent.'];
+      return ['OpenClaw: DISCONNECTED', 'Start gateway: openclaw gateway start', 'Then reconnect by typing any command.'];
     },
-    status: () => { return ['Agent OS v0.1.0', 'All systems nominal', '5 agents online', '7 panels active', 'Health: 98%']; },
-    agents: () => { return ['Agent Fleet:', '  Hermes      [ONLINE]  Orchestrator (Core)', '  Claude Code [ONLINE]  Developer', '  Antigravity [ONLINE]  Researcher', '  Codex       [BUSY]    Coder', '  OpenClaw    [ONLINE]  Executor']; },
-    date: () => {
-      const opts = { timeZone: state.timezone, weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !state.clock24h };
-      return [new Intl.DateTimeFormat('en-US', opts).format(new Date())];
-    },
-    whoami: () => { return ['agent@localhost']; },
-    panels: () => { return ['Panels:', '  1. Mission Control', '  2. Obsidian Vault', '  3. Kanban Swarm', '  4. Studio', '  5. Journal', '  6. Terminal', '  7. Settings']; },
-    version: () => { return ['Agent OS v0.1.0', 'Single-file HTML/CSS/JS', 'Zero dependencies', 'Built by Hermes for LITON']; },
-    clear: () => { setTimeout(() => { if (terminalOutput) { terminalOutput.innerHTML = ''; } }, 0); return []; },
+    clear: () => { setTimeout(() => { if (terminalOutput) terminalOutput.innerHTML = ''; }, 0); return []; },
   };
 
-  function handleTerminal(cmd) {
+  function handleTerminal() {
     if (!terminalInput) return;
     const input = terminalInput.value.trim();
     if (!input) return;
@@ -1451,19 +1564,30 @@ This vault is the persistent memory for Agent OS.
     line.className = 'terminal-line';
     line.innerHTML = `<span class="terminal-prompt">agent@os:~$</span><span class="terminal-cmd">${input}</span>`;
     terminalOutput.appendChild(line);
-    // Process
-    const parts = input.split(' ');
-    const cmd = parts[0].toLowerCase();
-    if (terminalCommands[cmd]) {
-      const result = terminalCommands[cmd]();
-      result.forEach(r => terminalPrint(r, 'response'));
-    } else if (cmd === 'echo') {
-      terminalPrint(parts.slice(1).join(' ') || '', 'response');
-    } else {
-      terminalPrint(`Command not found: ${cmd}. Type 'help' for available commands.`, 'error');
-    }
     terminalInput.value = '';
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+    // Try local commands first
+    const parts = input.split(' ');
+    const cmd = parts[0].toLowerCase();
+    if (localCommands[cmd]) {
+      const result = localCommands[cmd]();
+      result.forEach(r => terminalPrint(r, 'response'));
+      return;
+    }
+    if (cmd === 'echo') {
+      terminalPrint(parts.slice(1).join(' ') || '', 'response');
+      return;
+    }
+
+    // Send to OpenClaw if connected
+    ensureOpenClaw();
+    if (openclawConnected && openclawWs && openclawWs.readyState === WebSocket.OPEN) {
+      sendToOpenClaw(input);
+    } else {
+      terminalPrint(`Command not found: ${cmd}. Type 'help' for available commands.`, 'error');
+      terminalPrint('Tip: OpenClaw gateway is ' + (openclawConnected ? 'connected' : 'disconnected') + '. Non-local commands need OpenClaw.', 'info');
+    }
   }
 
   if (terminalInput) {
